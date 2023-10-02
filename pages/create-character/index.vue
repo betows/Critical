@@ -58,13 +58,19 @@
     <v-card v-if="selectedBackground" class="character-sheet" transition="fade-transition">
       <h2>Character Sheet</h2>
       <div class="sheet-section">
+        <img
+          :src="characterImage"
+          alt="Character Image"
+          v-if="characterImage"
+          style="width: 20%;"
+        >
         <strong>Race:</strong> {{ selectedRace.name }}
-      </div>
-      <div>
-        <strong>Class:</strong> {{ selectedClass.name }}
-      </div>
-      <div>
-        <strong>Background:</strong> {{ selectedBackground.name }}
+        <div>
+          <strong>Class:</strong> {{ selectedClass.name }}
+        </div>
+        <div>
+          <strong>Background:</strong> {{ selectedBackground.name }}
+        </div>
       </div>
       <div class="dice-container" v-if="rolling">
         <div class="dice" />
@@ -87,6 +93,8 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   data() {
     return {
@@ -95,6 +103,8 @@ export default {
       selectedBackground: null,
       diceRolled: false,
       rolling: false,
+      imageHash: null,
+      characterImage: null,
       races: [],
       abilities: {
         strength: 0,
@@ -125,7 +135,10 @@ export default {
     },
     selectClass(classItem) {
       this.selectedClass = classItem;
-      // Proceed to next step or store selection
+      if (this.selectedRace) {
+        const prompt = `${this.selectedRace.name} ${this.selectedClass.name}`;
+        this.generateCharacterImage(prompt);
+      }
     },
     selectBackground(background) {
       this.selectedBackground = background;
@@ -150,7 +163,64 @@ export default {
       this.selectedClass = null;
       this.selectedRace = null;
       this.diceRolled = false;
+    },
+    async generateCharacterImage() {
+      const prompt = `${this.selectedRace.name} ${this.selectedClass.name}`;
+      const formData = new FormData();
+      formData.append("prompt", prompt);
+      formData.append("id", "uniqueID"); // You can use a unique ID here
+      try {
+        const response = await this.$axios.$post("https://arimagesynthesizer.p.rapidapi.com/generate", formData, {
+          headers: {
+            "X-RapidAPI-Host": "arimagesynthesizer.p.rapidapi.com",
+            "X-RapidAPI-Key": process.env.X_RAPID_API_KEY,
+            "Content-Type": "multipart/form-data"
+          }
+        });
+        if (response.message) {
+          // Image is being processed, start polling using the provided hash
+          this.pollForImage(response.hash);
+        } else {
+          console.error("Unexpected response:", response);
+        }
+      } catch (error) {
+        console.error("Error generating image:", error);
+      }
+    },
+    async pollForImage(uniqueID, attempts = 0) {
+      const MAX_ATTEMPTS = 5;
+      const POLL_INTERVAL = 5000;
+      if (attempts >= MAX_ATTEMPTS) {
+        console.error("Max attempts reached. Image not available.");
+        return;
+      }
+      try {
+        const response = await this.$axios.$get(`https://arimagesynthesizer.p.rapidapi.com/get?hash=${uniqueID}&returnType=image`, {
+          headers: {
+            "X-RapidAPI-Host": "arimagesynthesizer.p.rapidapi.com",
+            "X-RapidAPI-Key": process.env.X_RAPID_API_KEY
+          },
+          responseType: "blob"
+        });
+        if (response && response.size > 0) {
+          const reader = new FileReader();
+          reader.readAsDataURL(response);
+          reader.onloadend = () => {
+            this.characterImage = reader.result; // Assign the base64 string to characterImage
+          };
+        } else if (response && response.message === "File already in progress.") {
+          console.log("Image generation in progress. Retrying...");
+          setTimeout(() => this.pollForImage(uniqueID, attempts + 1), POLL_INTERVAL);
+        } else {
+          console.log("Image not ready yet. Retrying...");
+          setTimeout(() => this.pollForImage(uniqueID, attempts + 1), POLL_INTERVAL);
+        }
+      } catch (error) {
+        console.error("Error fetching image:", error);
+        setTimeout(() => this.pollForImage(uniqueID, attempts + 1), POLL_INTERVAL);
+      }
     }
+
   }
 };
 </script>
@@ -189,6 +259,9 @@ export default {
 }
 
 .sheet-section {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
   margin-bottom: 10px;
 }
 .character-creation-page {

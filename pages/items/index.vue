@@ -1,23 +1,61 @@
 <template>
   <div class="items-page">
-    <!-- Search Bar -->
-    <v-text-field
-      v-model="searchQuery"
-      label="Procure por um item"
-      solo
-      clearable
-      @input="searchItems"
-      class="search-bar"
-    />
-    <v-select
-      v-model="selectedCategory"
-      :items="categories"
-      label="Selecione uma categoria de item"
-      @change="filterByCategory"
-    />
+    <div style="margin-bottom: -50px;" v-if="!selectedType">
+      Selecione um tipo de item que deseja visualizar
+    </div>
+    <div class="selection-cards" v-if="!selectedType">
+      <v-card
+        v-for="type in itemTypes"
+        :key="type.name"
+        @click="selectType(type)"
+        class="selection-card"
+      >
+        <img :src="type.image" alt="Type Image" width="100%">
+        <v-card-title>{{ type.ptName }}</v-card-title>
+      </v-card>
+    </div>
 
+    <!-- Items Section -->
+    <div v-else>
+      <v-btn
+        color="#6200ea"
+        style="margin-bottom: 20px;"
+        @click="backToTypeSelection"
+        icon
+      >
+        <v-icon> mdi-arrow-left </v-icon>
+      </v-btn>
+      <!-- Search Bar -->
+      <v-text-field
+        v-model="searchQuery"
+        label="Procure por um item (em inglês)"
+        solo
+        clearable
+        @input="searchItems"
+        class="search-bar"
+      />
+      <v-select
+        v-if="selectedType === 'Equipment'"
+        v-model="selectedCategory"
+        :items="categories"
+        label="Filtre por categoria"
+        @change="filterByCategory"
+        clearable
+        clear-icon="mdi-close-circle-outline"
+        outlined
+        style="width: 300px"
+        color="#6200ea"
+      />
+      <v-checkbox
+        v-model="shouldTranslate"
+        label="Traduzir itens (pode levar alguns segundos para traduzir todos os itens!)"
+        color="#6200ea"
+        style="margin-bottom: 20px;"
+        @change="loadAllItemsOfType"
+      />
+    </div>
     <!-- Items List -->
-    <div class="items-grid" v-if="items.length">
+    <div class="items-grid" v-if="items.length && !isTranslating">
       <v-card
         v-for="item in items"
         :key="item.index"
@@ -25,8 +63,17 @@
         class="item-card"
       >
         <img src="@/assets/images/magic_ring.jpg" alt="Item Image" width="100%">
-        <v-card-title>{{ $t(item.name) }}</v-card-title>
+        <v-card-title>{{ item.name }}</v-card-title>
       </v-card>
+    </div>
+    <div class="skeleton-items-grid" v-if="isTranslating">
+      <v-skeleton-loader
+        v-for="(item, index) in 4"
+        :key="index"
+        style="width: 100%; height: 100%;"
+        type="image, list-item-two-line"
+        :loading="isTranslating"
+      />
     </div>
 
     <!-- Item Details Modal -->
@@ -108,13 +155,20 @@ export default {
       selectedItem: {},
       categories: [],
       selectedCategory: null,
+      selectedType: null,
+      shouldTranslate: false,
+      itemTypes: [
+        { name: "Equipment", ptName: "Equipamento", image: require("@/assets/images/player-equipment.webp") },
+        { name: "Magic Items", ptName: "Itens mágicos", image: require("@/assets/images/dragon-sword.jpg") },
+        { name: "Weapon Properties", ptName: "Propriedades das armas", image: require("@/assets/images/magic-properties.jpg") }
+      ],
       itemDialog: false,
-      selectedItemImage: ""
+      selectedItemImage: "",
+      isTranslating: false
     };
   },
   mounted() {
-    this.loadDefaultItems();
-    this.fetchCategories(); // Fetch the categories when the component is mounted
+    this.fetchCategories();
   },
   methods: {
     async fetchCategories() {
@@ -129,23 +183,10 @@ export default {
       try {
         const response = await axios.get("https://www.dnd5eapi.co/api/equipment");
         const items = response.data.results;
-        // Add translations for each item
-        items.forEach(item => {
-          this.$i18n.setLocaleMessage("pt", { [item.name]: "Translated Item Name Here" });
-        });
+        for (let item of items) {
+          item.name = await this.translateText(item.name);
+        }
         this.items = items;
-      } catch (error) {
-        console.error("Error fetching items:", error);
-      }
-    },
-    async searchItems() {
-      if (!this.searchQuery.trim()) {
-        this.loadDefaultItems();
-        return;
-      }
-      try {
-        const response = await axios.get(`https://www.dnd5eapi.co/api/equipment?name=${this.searchQuery}`);
-        this.items = response.data.results;
       } catch (error) {
         console.error("Error fetching items:", error);
       }
@@ -154,6 +195,24 @@ export default {
       try {
         const response = await axios.get(`https://www.dnd5eapi.co${url}`);
         this.selectedItem = response.data;
+        // Translate selected item details
+        this.selectedItem.name = await this.translateText(this.selectedItem.name);
+        if (this.selectedItem.equipment_category) {
+          this.selectedItem.equipment_category.name = await this.translateText(this.selectedItem.equipment_category.name);
+        }
+        if (this.selectedItem.damage && this.selectedItem.damage.damage_type) {
+          this.selectedItem.damage.damage_type.name = await this.translateText(this.selectedItem.damage.damage_type.name);
+        }
+        if (this.selectedItem.properties) {
+          for (let property of this.selectedItem.properties) {
+            property.name = await this.translateText(property.name);
+          }
+        }
+        if (this.selectedItem.desc) {
+          for (let i = 0; i < this.selectedItem.desc.length; i++) {
+            this.selectedItem.desc[i] = await this.translateText(this.selectedItem.desc[i]);
+          }
+        }
         this.fetchItemImage(this.selectedItem.name);
         this.itemDialog = true;
       } catch (error) {
@@ -162,7 +221,7 @@ export default {
     },
     async fetchItemImage(itemName) {
       try {
-        const apiKey = "39727587-8081f6ce0f6a5705761bb323d";
+        const apiKey = process.env.PIXABAY_API_KEY;
         const response = await axios.get(`https://pixabay.com/api/?key=${apiKey}&q=${itemName}&image_type=vector`);
         if (response.data.hits.length > 0) {
           this.selectedItemImage = response.data.hits[0].largeImageURL;
@@ -173,19 +232,110 @@ export default {
         console.error("Error fetching image from Pixabay:", error);
       }
     },
-    async filterByCategory() {
-      if (!this.selectedCategory) {
-        this.loadDefaultItems();
+    selectType(type) {
+      this.selectedType = type.name;
+      if (type.name === "Equipment") {
+        this.fetchCategories();
+      }
+      this.loadAllItemsOfType();  // Load all items upon type selection
+    },
+    backToTypeSelection() {
+      this.selectedType = null;
+      this.items = [];
+      this.selectedCategory = null;
+    },
+    async loadAllItemsOfType() {
+      this.isTranslating = true;
+      try {
+        let apiUrl = "";
+        switch (this.selectedType) {
+        case "Equipment":
+          apiUrl = "https://www.dnd5eapi.co/api/equipment";
+          break;
+        case "Magic Items":
+          apiUrl = "https://www.dnd5eapi.co/api/magic-items";
+          break;
+        case "Weapon Properties":
+          apiUrl = "https://www.dnd5eapi.co/api/weapon-properties";
+          break;
+        }
+        const response = await axios.get(apiUrl);
+        const items = response.data.results;
+        for (let item of items) {
+          item.name = await this.translateText(item.name);
+        }
+        this.items = items;
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      } finally {
+        this.isTranslating = false;
+      }
+    },
+    async searchItems() {
+      if (!this.searchQuery.trim()) {
+        this.items = [];
         return;
       }
+      this.isTranslating = true;
+      try {
+        let apiUrl = "";
+        switch (this.selectedType) {
+        case "Equipment":
+          apiUrl = `https://www.dnd5eapi.co/api/equipment?name=${this.searchQuery}`;
+          break;
+        case "Magic Items":
+          apiUrl = `https://www.dnd5eapi.co/api/magic-items?name=${this.searchQuery}`;
+          break;
+        case "Weapon Properties":
+          apiUrl = `https://www.dnd5eapi.co/api/weapon-properties?name=${this.searchQuery}`;
+          break;
+        }
+        const response = await axios.get(apiUrl);
+        const items = response.data.results;
+        for (let item of items) {
+          item.name = await this.translateText(item.name);
+        }
+        this.items = items;
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      } finally {
+        this.isTranslating = false;
+      }
+    },
+    async filterByCategory() {
+      if (!this.selectedCategory) {
+        this.items = [];
+        return;
+      }
+      this.isTranslating = true;  // Set translating status to true
       try {
         const categoryResponse = await axios.get(`https://www.dnd5eapi.co/api/equipment-categories/${this.selectedCategory.toLowerCase()}`);
-        this.items = categoryResponse.data.equipment;
+        const items = categoryResponse.data.equipment;
+        for (let item of items) {
+          item.name = await this.translateText(item.name);
+        }
+        this.items = items;
       } catch (error) {
         console.error("Error filtering items by category:", error);
+      } finally {
+        this.isTranslating = false;  // Reset translating status
+      }
+    },
+    async translateText(text) {
+      if (!this.shouldTranslate) {
+        return text;  // Return original text if should not translate
+      }
+      try {
+        const sourceLang = "en";
+        const targetLang = "pt";
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(text)}`;
+        const response = await axios.get(url);
+        return response.data[0][0][0];
+      } catch (error) {
+        console.error("Translation Error:", error);
+        return text;
       }
     }
-
   }
 };
 </script>
@@ -214,6 +364,20 @@ export default {
   justify-content: center;
 }
 
+.skeleton-items-grid {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.selection-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 100px;
+}
+
 .item-card {
   width: 200px;
   cursor: pointer;
@@ -226,5 +390,15 @@ export default {
 
 .item-modal {
   border: 5px solid #6200ea; /* Dragon-themed color */
+}
+
+.selection-card{
+  width: 250px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.selection-card:hover {
+  transform: scale(1.05);
 }
 </style>

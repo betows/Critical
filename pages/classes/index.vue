@@ -1,5 +1,12 @@
 <template>
   <div class="classes-page">
+    <v-checkbox
+      v-model="shouldTranslate"
+      label="Traduzir classes (pode levar alguns segundos para traduzir todas as classes!)"
+      color="#6200ea"
+      style="margin-bottom: 20px; width: 100%;"
+      @change="loadClasses"
+    />
     <!-- Classes List -->
     <div class="classes-grid" v-if="classes.length">
       <v-card
@@ -141,7 +148,8 @@ export default {
     return {
       classes: [],
       selectedClass: {},
-      classDialog: false
+      classDialog: false,
+      shouldTranslate: false
     };
   },
   mounted() {
@@ -151,7 +159,10 @@ export default {
     async loadClasses() {
       try {
         const response = await axios.get("https://www.dnd5eapi.co/api/classes");
-        this.classes = response.data.results;
+        this.classes = await Promise.all(response.data.results.map(async classItem => {
+          classItem.name = await this.translateText(classItem.name);
+          return classItem;
+        }));
       } catch (error) {
         console.error("Error fetching classes:", error);
       }
@@ -160,6 +171,8 @@ export default {
       try {
         const response = await axios.get(`https://www.dnd5eapi.co${url}`);
         this.selectedClass = response.data;
+        this.selectedClass.name = await this.translateText(this.selectedClass.name);
+        // Add additional translations for other details as needed
         this.classDialog = true;
       } catch (error) {
         console.error("Error fetching class details:", error);
@@ -170,7 +183,19 @@ export default {
       const formattedName = className ? className.toLowerCase().replace(/ /g, "-") : "red-dragon";
       return require(`@/assets/images/${formattedName}.jpg`);
     },
-
+    async translateText(text) {
+      if (!this.shouldTranslate) return text;
+      try {
+        const sourceLang = "en";
+        const targetLang = "pt";
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(text)}`;
+        const response = await axios.get(url);
+        return response.data[0][0][0];
+      } catch (error) {
+        console.error("Translation Error:", error);
+        return text;
+      }
+    },
     handleImageError(event) {
     // Fallback to a default image or handle the error
       event.target.src = require("@/assets/images/giant.png");

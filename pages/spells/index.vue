@@ -9,6 +9,13 @@
       @input="searchSpells"
       class="search-bar"
     />
+    <v-checkbox
+      v-model="shouldTranslate"
+      label="Traduzir feitiços"
+      color="#6200ea"
+      style="margin-bottom: 20px;"
+      @change="loadDefaultSpells"
+    />
     <div class="class-filters">
       <div class="class-filters">
         <v-chip
@@ -137,7 +144,6 @@
 
 <script>
 import axios from "axios";
-import anime from "animejs";
 
 export default {
   data() {
@@ -146,6 +152,7 @@ export default {
       spells: [],
       selectedSpell: {},
       spellDialog: false,
+      shouldTranslate: false,
       selectedClass: "",
       dndClasses: []
     };
@@ -153,13 +160,6 @@ export default {
   mounted() {
     this.loadDefaultSpells();
     this.fetchAllClasses();
-  },
-  watch: {
-    spellDialog(newValue) {
-      if (newValue) {
-        this.playAnimation();
-      }
-    }
   },
   computed: {
     selectedSpellClassIcon() {
@@ -171,25 +171,42 @@ export default {
     }
   },
   methods: {
+    async translateText(text) {
+      if (!this.shouldTranslate) return text;
+      try {
+        const sourceLang = "en";
+        const targetLang = "pt";
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURI(text)}`;
+        const response = await axios.get(url);
+        return response.data[0][0][0];
+      } catch (error) {
+        console.error("Translation Error:", error);
+        return text;
+      }
+    },
     async loadDefaultSpells() {
       try {
         const response = await axios.get("https://www.dnd5eapi.co/api/spells");
-        this.spells = response.data.results;
+        this.spells = await Promise.all(response.data.results.map(async spell => {
+          spell.name = await this.translateText(spell.name);
+          return spell;
+        }));
       } catch (error) {
         console.error("Error fetching default spells:", error);
       }
     },
     async selectClass(dndClass) {
       if (this.selectedClass === dndClass.enName) {
-        // If the class is already selected, unselect it
         this.selectedClass = "";
         this.loadDefaultSpells();
       } else {
         this.selectedClass = dndClass.enName;
         try {
-          // Fetch class-specific data
           const response = await axios.get(`https://www.dnd5eapi.co/api/classes/${this.selectedClass.toLowerCase()}/spells`);
-          this.spells = response.data.results;
+          this.spells = await Promise.all(response.data.results.map(async spell => {
+            spell.name = await this.translateText(spell.name);
+            return spell;
+          }));
         } catch (error) {
           console.error("Error fetching spells for class:", error);
         }
@@ -223,7 +240,10 @@ export default {
         if (this.searchQuery) {
           fetchedSpells = fetchedSpells.filter(spell => spell.name.toLowerCase().includes(this.searchQuery.toLowerCase()));
         }
-        this.spells = fetchedSpells;
+        this.spells = await Promise.all(fetchedSpells.map(async spell => {
+          spell.name = await this.translateText(spell.name);
+          return spell;
+        }));
       } catch (error) {
         console.error("Error fetching spells:", error);
       }
@@ -232,22 +252,24 @@ export default {
       try {
         const response = await axios.get(`https://www.dnd5eapi.co${url}`);
         this.selectedSpell = response.data;
+        this.selectedSpell.name = await this.translateText(this.selectedSpell.name);
+        if (this.selectedSpell.school) {
+          this.selectedSpell.school.name = await this.translateText(this.selectedSpell.school.name);
+        }
+        if (this.selectedSpell.desc) {
+          this.selectedSpell.desc = await Promise.all(this.selectedSpell.desc.map(desc => this.translateText(desc)));
+        }
         this.spellDialog = true;
       } catch (error) {
         console.error("Error fetching spell details:", error);
       }
     },
-    playAnimation() {
-      anime({
-        targets: "#animationContainer",
-        translateX: 250,
-        rotate: "1turn",
-        backgroundColor: "#FFF",
-        duration: 800
-      });
-    },
     translateClassName(englishName) {
       const translations = {
+        "Barbarian": "Bárbaro",
+        "Fighter": "Guerreiro",
+        "Monk": "Monge",
+        "Rogue": "Ladino",
         "Bard": "Bardo",
         "Cleric": "Clérigo",
         "Druid": "Druida",
@@ -313,6 +335,7 @@ export default {
 .class-filters {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   margin-bottom: 20px;
 }
