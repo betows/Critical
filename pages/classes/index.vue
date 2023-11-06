@@ -2,7 +2,7 @@
   <div class="classes-page">
     <v-checkbox
       v-model="shouldTranslate"
-      label="Traduzir classes (pode levar alguns segundos para traduzir todas as classes!)"
+      label="Traduzir classes"
       color="#6200ea"
       style="margin-bottom: 20px; width: 100%;"
       @change="loadClasses"
@@ -16,7 +16,7 @@
         class="class-card"
       >
         <img
-          :src="getClassImage(classItem.index)"
+          :src="getClassImage(classItem.originalName)"
           class="class-card-image"
           @error="handleImageError"
         >
@@ -31,7 +31,7 @@
           <div class="class-header">
             <div v-if="selectedClass" class="class-image-container">
               <img
-                :src="getClassImage(selectedClass.name)"
+                :src="getClassImage(selectedClass.originalName)"
                 alt="Class Image"
                 @error="handleImageError"
                 class="class-image"
@@ -160,6 +160,7 @@ export default {
       try {
         const response = await axios.get("https://www.dnd5eapi.co/api/classes");
         this.classes = await Promise.all(response.data.results.map(async classItem => {
+          classItem.originalName = classItem.name; // Store the original name
           classItem.name = await this.translateText(classItem.name);
           return classItem;
         }));
@@ -171,15 +172,34 @@ export default {
       try {
         const response = await axios.get(`https://www.dnd5eapi.co${url}`);
         this.selectedClass = response.data;
-        this.selectedClass.name = await this.translateText(this.selectedClass.name);
-        // Add additional translations for other details as needed
+        this.selectedClass.originalName = this.selectedClass.name; // Store the original name
+        // Translate all relevant properties if shouldTranslate is true
+        if (this.shouldTranslate) {
+          this.selectedClass.name = await this.translateText(this.selectedClass.name);
+          this.selectedClass.hit_die = await this.translateText(this.selectedClass.hit_die.toString());
+          // Translate nested properties
+          this.selectedClass.proficiency_choices = await Promise.all(
+            this.selectedClass.proficiency_choices.map(async choice => {
+              choice.desc = await this.translateText(choice.desc);
+              choice.from.options = await Promise.all(
+                choice.from.options.map(async option => {
+                  option.item.name = await this.translateText(option.item.name);
+                  return option;
+                })
+              );
+              return choice;
+            })
+          );
+      
+          // Add similar translation logic for other properties as needed...
+        }
         this.classDialog = true;
       } catch (error) {
         console.error("Error fetching class details:", error);
       }
     },
     getClassImage(className) {
-    // Convert the class name to lowercase and replace spaces with hyphens (if any)
+      // Use the original name for image retrieval
       const formattedName = className ? className.toLowerCase().replace(/ /g, "-") : "red-dragon";
       return require(`@/assets/images/${formattedName}.jpg`);
     },
@@ -197,12 +217,12 @@ export default {
       }
     },
     handleImageError(event) {
-    // Fallback to a default image or handle the error
       event.target.src = require("@/assets/images/giant.png");
     }
   }
 };
 </script>
+
 
 <style scoped>
 .classes-page {

@@ -1,13 +1,31 @@
 <template>
   <v-app dark>
+    <!-- App Bar (Header) -->
+    <v-app-bar
+      clipped-left
+      fixed
+      app
+      class="transparent-app-bar-header"
+      dark
+    >
+      <v-app-bar-nav-icon @click="drawer = !drawer" />
+      <img
+        alt="CRITICAL"
+        src="@/assets/images/logo.png"
+        width="65px"
+        @click="$router.push('/')"
+        style="cursor: pointer; margin-left 12px;"
+      >
+      <v-spacer />
+    </v-app-bar>
     <!-- Left Navigation Drawer -->
     <v-navigation-drawer
       v-model="drawer"
       :mini-variant="miniVariant"
-      :clipped="clipped"
+      clipped
       app
       style="height: 100% !important;"
-      color="deep-purple accent-4"
+      class="transparent-app-bar"
     >
       <v-list>
         <v-list-item
@@ -28,22 +46,9 @@
       </v-list>
     </v-navigation-drawer>
 
-    <!-- App Bar (Header) -->
-    <v-app-bar
-      :clipped-left="clipped"
-      fixed
-      app
-      color="deep-purple accent-4"
-      dark
-    >
-      <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <v-toolbar-title>{{ title }}</v-toolbar-title>
-      <v-spacer />
-    </v-app-bar>
-
     <!-- Main Content Area -->
-    <v-main>
-      <v-container>
+    <v-main class="main-wrap">
+      <v-container style="margin-bottom: 24px;">
         <Nuxt />
       </v-container>
     </v-main>
@@ -52,7 +57,7 @@
     <v-footer
       :absolute="!fixed"
       app
-      color="deep-purple accent-4"
+      class="transparent-app-bar"
     >
       <span>&copy; {{ new Date().getFullYear() }} - CRITICAL</span>
     </v-footer>
@@ -96,7 +101,7 @@ export default {
         // Add more categories as needed
       ],
       miniVariant: false,
-      right: true,
+      right: false,
       rightDrawer: false,
       title: "CRITICAL"
     };
@@ -105,5 +110,20 @@ export default {
 </script>
 
 <style scoped>
-/* Add any additional styles or overrides here */
+.transparent-app-bar {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  .main-wrap {
+    padding: 20px 0 !important;
+  }
+
+  .transparent-app-bar-header {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    position: relative !important;
+    max-height: 64px !important;
+    }
 </style>

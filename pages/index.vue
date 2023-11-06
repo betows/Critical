@@ -1,6 +1,6 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
-  <div>
+  <div style="width: 100%; padding: 0px; justify-content: space-between">
     <!-- Hero Section -->
     <section class="hero">
       <h1>Bem vindo ao CRITICAL!</h1>
@@ -10,30 +10,24 @@
     <!-- Browse Section -->
     <section class="browse">
       <div v-for="item in items" :key="item.title" class="category-card">
-        <v-icon size="50" color="deep-purple accent-4">
+        <v-icon size="50" color="primary">
           {{ item.icon }}
         </v-icon>
-        <h2>{{ item.title }}</h2>
+        <h2 style="color: white">
+          {{ item.title }}
+        </h2>
         <p>{{ item.description }}</p>
-        <v-btn :to="item.to" color="deep-purple accent-4">
+        <v-btn :to="item.to" color="primary">
           Explore
         </v-btn>
       </div>
-    </section>
-
-    <!-- Featured Section -->
-    <!-- This is a placeholder. You'd typically fetch and display data here. -->
-    <section color="deep-purple" class="featured">
-      <h2> AOBA </h2>
-      <p>Descubra os aspectos mais intrigantes e populares do mundo de D&D.</p>
-      <!-- Add featured items, spells, monsters here -->
     </section>
 
     <!-- Call to Action -->
     <section class="cta">
       <h2>Pronto pra mergulhar?</h2>
       <p>Junte se a nós e entre nesse mundo fantástico.</p>
-      <v-btn color="deep-purple accent-4">
+      <v-btn color="primary">
         Juntar-se
       </v-btn>
     </section>
@@ -77,6 +71,7 @@ export default {
   padding: 100px 0;
   text-align: center;
   color: white;
+  border-radius: 8px;
 }
 
 .browse {
@@ -105,6 +100,17 @@ export default {
 
 .cta {
   padding: 50px 0;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  margin-bottom: 40px;
+}
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 15px;
   text-align: center;
 }
 </style>

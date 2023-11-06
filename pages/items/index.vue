@@ -16,9 +16,9 @@
     </div>
 
     <!-- Items Section -->
-    <div v-else>
+    <div style="align-self: flex-start" v-else>
       <v-btn
-        color="#6200ea"
+        color="primary"
         style="margin-bottom: 20px;"
         @click="backToTypeSelection"
         icon
@@ -29,7 +29,8 @@
       <v-text-field
         v-model="searchQuery"
         label="Procure por um item (em inglês)"
-        solo
+        outlined
+        color="primary"
         clearable
         @input="searchItems"
         class="search-bar"
@@ -44,12 +45,12 @@
         clear-icon="mdi-close-circle-outline"
         outlined
         style="width: 300px"
-        color="#6200ea"
+        color="primary"
       />
       <v-checkbox
         v-model="shouldTranslate"
         label="Traduzir itens (pode levar alguns segundos para traduzir todos os itens!)"
-        color="#6200ea"
+        color="primary"
         style="margin-bottom: 20px;"
         @change="loadAllItemsOfType"
       />
@@ -158,7 +159,6 @@ export default {
       selectedType: null,
       shouldTranslate: false,
       itemTypes: [
-        { name: "Equipment", ptName: "Equipamento", image: require("@/assets/images/player-equipment.webp") },
         { name: "Magic Items", ptName: "Itens mágicos", image: require("@/assets/images/dragon-sword.jpg") },
         { name: "Weapon Properties", ptName: "Propriedades das armas", image: require("@/assets/images/magic-properties.jpg") }
       ],
@@ -345,6 +345,10 @@ export default {
 .items-page {
   background: url('/path-to-game-background.jpg') no-repeat center center;
   background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
 }
 
 .item-image {
@@ -368,14 +372,17 @@ export default {
   display: flex;
   gap: 20px;
   justify-content: center;
+  width:100%;
 }
 
 .selection-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  margin-top: 100px;
+    display: flex;
+    /* flex-wrap: wrap; */
+    gap: 32px;
+    margin-top: 100px;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
 }
 
 .item-card {
@@ -389,11 +396,11 @@ export default {
 }
 
 .item-modal {
-  border: 5px solid #6200ea; /* Dragon-themed color */
+  border: 5px solid #6200ea;
 }
 
 .selection-card{
-  width: 250px;
+  width: 30%;
   cursor: pointer;
   transition: transform 0.3s;
 }
