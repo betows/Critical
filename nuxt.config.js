@@ -1,5 +1,4 @@
 import colors from "vuetify/es5/util/colors";
-const config = require("./config");
 
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
@@ -37,7 +36,7 @@ export default {
     // https://go.nuxtjs.dev/vuetify
     "@nuxtjs/vuetify"
   ],
-  googleFonts: config.googleFonts,
+
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
     // https://go.nuxtjs.dev/axios
