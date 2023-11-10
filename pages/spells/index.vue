@@ -12,7 +12,7 @@
     <v-checkbox
       v-model="shouldTranslate"
       label="Traduzir feitiços"
-      color="#6200ea"
+      color="primary"
       style="margin-bottom: 20px;"
       @change="loadDefaultSpells"
     />
@@ -44,13 +44,25 @@
     </div>
 
     <!-- Spell Details Modal -->
-    <v-dialog v-model="spellDialog" max-width="600px" content-class="taskbot-mobile-dialog">
+    <v-dialog
+      :fullscreen="mobile"
+      v-model="spellDialog"
+      max-width="600px"
+      content-class="taskbot-mobile-dialog"
+    >
       <v-card>
         <v-card-title>
           <v-icon left v-if="selectedSpellClassIcon">
             {{ selectedSpellClassIcon }}
           </v-icon>
-          {{ selectedSpell.name }}
+          <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100% !important;">
+            <div>
+              {{ selectedSpell.name }}
+            </div>
+            <v-icon color="white" style="margin-bottom: 8px;" @click="spellDialog = false">
+              mdi-close-circle-outline
+            </v-icon>
+          </div>
         </v-card-title>
         <v-card-text>
           <div v-if="selectedSpell.school">
@@ -127,11 +139,32 @@
             </ul>
           </div>
 
-          <!-- Additional details can be added here... -->
+          <div class="damage-section">
+            <div v-if="selectedSpell.damage">
+              <strong>Dano por slot:</strong>
+              <div v-if="selectedSpell.damage.damage_at_slot_level">
+                <ul>
+                  <li v-for="(damage, level) in selectedSpell.damage?.damage_at_slot_level" :key="level">
+                    Level {{ level }}: {{ damage }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div v-if="selectedSpell.heal_at_slot_level">
+              <strong>Cura por slot:</strong>
+              <div v-if="selectedSpell.heal_at_slot_level">
+                <ul>
+                  <li v-for="(heal, level) in selectedSpell.heal_at_slot_level" :key="level">
+                    Level {{ level }}: {{ heal }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </v-card-text>
         <v-card-actions style="padding: 24px;">
           <v-btn
-            color="#6200ea"
+            color="primary"
             @click="spellDialog = false"
           >
             Fechar
@@ -162,6 +195,10 @@ export default {
     this.fetchAllClasses();
   },
   computed: {
+    mobile() {
+      if (process.browser) return window.innerWidth > 1100 ? false : true;
+      else return false;
+    },
     selectedSpellClassIcon() {
       if (this.selectedSpell.classes && this.selectedSpell.classes.length) {
         const className = this.selectedSpell.classes[0].name; // Assuming the first class is the primary class for the spell
@@ -351,6 +388,19 @@ export default {
 .spell-modal .v-dialog__content::-webkit-scrollbar-thumb:hover {
   background-color: #555;
 }
-
+@media (max-width: 600px) {
+  .spells-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: center;
+}
+.spell-card {
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+  
+}
 
 </style>
