@@ -381,12 +381,12 @@ export default {
 }
 
 .spell-modal .v-dialog__content::-webkit-scrollbar-thumb {
-  background-color: #888;
+  background-color: #555;
   border-radius: 2px;
 }
 
 .spell-modal .v-dialog__content::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
+  background-color: #888;
 }
 @media (max-width: 600px) {
   .spells-grid {
