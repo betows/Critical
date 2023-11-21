@@ -67,6 +67,9 @@
 <script>
 export default {
   name: "DefaultLayout",
+  head() {
+    return "Critical Damage";
+  },
   data() {
     return {
       clipped: false,

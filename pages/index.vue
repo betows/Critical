@@ -3,7 +3,9 @@
   <div style="width: 100%; padding: 0px; justify-content: space-between">
     <!-- Hero Section -->
     <section class="hero">
-      <h1>Bem vindo ao CRITICAL!</h1>
+      <h2 class="page-title">
+        Bem vindo ao CRITICAL!
+      </h2>
       <p>Embarque em uma jornada pelo vasto mundo de Dungeons and Dragons. Explore itens, magias, monstros e mais!</p>
     </section>
 
@@ -112,5 +114,9 @@ export default {
   border-radius: 10px;
   padding: 15px;
   text-align: center;
+}
+.page-title {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #ffff;
 }
 </style>
