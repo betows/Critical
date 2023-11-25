@@ -13,7 +13,7 @@
       v-model="shouldTranslate"
       label="Traduzir feitiços"
       color="primary"
-      style="margin-bottom: 20px;"
+      style="margin-bottom: 20px; padding-left: 40px;"
       @change="loadDefaultSpells"
     />
     <div class="class-filters">
@@ -344,6 +344,7 @@ export default {
 
 .search-bar {
   margin-bottom: 20px;
+  padding-left: 40px;
 }
 
 .spells-grid {

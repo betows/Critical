@@ -16,7 +16,7 @@
     </div>
 
     <!-- Items Section -->
-    <div style="align-self: flex-start" v-else>
+    <div style="align-self: flex-start; padding-left: 40px;" v-else>
       <v-btn
         color="primary"
         style="margin-bottom: 20px;"
