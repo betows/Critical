@@ -15,7 +15,7 @@
         <v-icon size="50" color="primary">
           {{ item.icon }}
         </v-icon>
-        <h2 style="color: white">
+        <h2 class="page-title" style="color: white">
           {{ item.title }}
         </h2>
         <p>{{ item.description }}</p>
@@ -27,7 +27,9 @@
 
     <!-- Call to Action -->
     <section class="cta">
-      <h2>Pronto pra mergulhar?</h2>
+      <h2 class="page-title">
+        Pronto pra mergulhar?
+      </h2>
       <p>Junte se a nós e entre nesse mundo fantástico.</p>
       <v-btn color="primary">
         Juntar-se

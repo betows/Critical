@@ -24,7 +24,7 @@
       :mini-variant="miniVariant"
       clipped
       app
-      style="height: 100% !important;"
+      style="height: 90% !important; top: 64px; max-height: calc(100% + 34px); position: absolute;"
       class="transparent-app-bar"
     >
       <v-list>
@@ -48,7 +48,7 @@
 
     <!-- Main Content Area -->
     <v-main class="main-wrap">
-      <v-container style="margin-bottom: 24px;">
+      <v-container @click="drawer = false" style="margin-bottom: 24px;">
         <Nuxt />
       </v-container>
     </v-main>
