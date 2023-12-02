@@ -1,23 +1,22 @@
 <template>
   <div class="character-sheet">
     <header>
-      <v-text-field type="text" placeholder="Character Name" />
+      <v-text-field v-model="characterDetails.name" type="text" placeholder="Character Name" />
       <div class="header-details">
         <div style="display: flex; flex-direction: row; gap: 24px;">
           <v-text-field :value="classDetails.index" type="text" placeholder="Class" />
           <v-text-field
-            v-model="level"
+            v-model="characterDetails.level"
             type="number"
             :max="20"
             @input="level > 20 ? level = 20 : level = level"
             placeholder="Level"
           />
         </div>
-        <v-text-field type="text" placeholder="Background" />
-        <v-text-field type="text" placeholder="Player Name" />
-        <v-text-field type="text" placeholder="Race" />
-        <v-text-field type="text" placeholder="Alignment" />
-        <v-text-field type="text" placeholder="Experience Points" />
+        <v-text-field v-model="characterDetails.background" type="text" placeholder="Background" />
+        <v-text-field v-model="characterDetails.playerName" type="text" placeholder="Player Name" />
+        <v-text-field :value="raceDetails.index" type="text" placeholder="Race" />
+        <v-text-field v-model="characterDetails.alignment" type="text" placeholder="Alignment" />
       </div>
     </header>
     <section class="main-stats">
@@ -45,13 +44,19 @@
         <p><strong>Starting Proficiencies:</strong> {{ classDetails.proficiencies | joinNames }}</p>
       </div>
     </section>
+    <v-btn color="success" @click="saveCharacter(characterDetails)">
+      Save Character
+    </v-btn>
     <!-- Additional sections for skills, attacks & spellcasting, equipment, etc. -->
   </div>
 </template>
 
 <script>
+import pdfLib from "pdf-lib";
+
 export default {
   name: "CharacterSheet",
+  emits: ["save-character"],
   props: {
     raceDetails: {
       type: Object,
@@ -64,7 +69,13 @@ export default {
   },
   data() {
     return {
-      level: 1
+      characterDetails: {
+        name: "",
+        level: 1,
+        background: "",
+        playerName: "",
+        alignment: ""
+      }
     };
   },
   computed: {
@@ -76,13 +87,11 @@ export default {
       for (let bonus of this.raceDetails.ability_bonuses) {
         attributes[bonus.ability_score.index].bonus += bonus.bonus;
       }
-      
       // Assuming classDetails has ability_bonuses as well
       // Add bonuses from classDetails
       // for (let bonus of this.classDetails.ability_bonuses) {
       //   attributes[bonus.ability_score.index].bonus += bonus.bonus;
       // }
-      
       // Convert the attributes object to an array for rendering
       return Object.values(attributes);
     },
@@ -91,6 +100,31 @@ export default {
     }
   },
   methods: {
+    async saveCharacter(characterDetails) {
+      this.listFormFields();
+      // Load the blank character sheet PDF
+      const response = await fetch("/character-sheet.pdf");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+      }
+      const existingPdfBytes = await response.arrayBuffer();
+      // Load a PDFDocument from the existing PDF bytes
+      const pdfDoc = await this.$pdfLib.PDFDocument.load(existingPdfBytes);
+      // Get the form containing all the fields
+      const form = pdfDoc.getForm();
+      // Fill in the form fields with the user's data
+      form.getTextField("CharacterName").setText(characterDetails.name);
+      form.getTextField("Race ").setText(characterDetails.race);
+      // ... fill other fields similarly
+      // Serialize the PDFDocument to bytes (a Uint8Array)
+      const pdfBytes = await pdfDoc.save();
+      // Trigger the download
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "character-sheet.pdf";
+      link.click();
+    },
     initializeAttributes() {
       // Initialize attributes, potentially with base scores or other logic
       const attributes = {
@@ -102,6 +136,19 @@ export default {
         cha: { ability_score: { name: "Charisma" }, value: 10, bonus: 0 }
       };
       return attributes;
+    },
+    async listFormFields() {
+      const response = await fetch("/character-sheet.pdf");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+      }
+      const existingPdfBytes = await response.arrayBuffer();
+      const pdfDoc = await this.$pdfLib.PDFDocument.load(existingPdfBytes);
+      const form = pdfDoc.getForm();
+      const fields = form.getFields();
+      fields.forEach(field => {
+        console.log(field.getName());
+      });
     }
   },
   filters: {

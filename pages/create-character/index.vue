@@ -61,11 +61,13 @@
           </v-stepper-step>
 
           <v-stepper-content step="final">
-            <CharacterSheet v-if="selectedRace && selectedClass" :race-details="selectedRace" :class-details="selectedClass" />
+            <CharacterSheet
+              v-if="selectedRace && selectedClass"
+              :race-details="selectedRace"
+              :class-details="selectedClass"
+              @save-character="saveCharacter($event)"
+            />
             <!-- Character Finalization Component Here -->
-            <v-btn color="success" @click="saveCharacter()">
-              Save Character
-            </v-btn>
             <!-- Include options to print or download -->
           </v-stepper-content>
         </v-stepper>
@@ -75,6 +77,8 @@
 </template>
 
 <script>
+import pdfLib from "pdf-lib";
+import jsPDF from "jspdf";
 
 export default {
   components: { 
@@ -88,6 +92,10 @@ export default {
     selectedClass: null
     // Other reactive data properties for character creation
   }),
+  mounted() {
+    this.$pdfLib.PDFDocument; // Access pdf-lib
+    this.$jsPDF;
+  },
   methods: {
     handleSelectRace(race) {
       this.selectedRace = race;
@@ -95,8 +103,26 @@ export default {
     handleSelectClass(classItem) {
       this.selectedClass = classItem;
     },
-    saveCharacter() {
-      // Logic to save character data
+    async saveCharacter(characterDetails) {
+      console.log(characterDetails);
+      // Load the blank character sheet PDF
+      const existingPdfBytes = await fetch("/assets/character-sheet.pdf").then(res => res.arrayBuffer());
+      // Load a PDFDocument from the existing PDF bytes
+      const pdfDoc = await pdfLib.PDFDocument.load(existingPdfBytes);
+      // Get the form containing all the fields
+      const form = pdfDoc.getForm();
+      // Fill in the form fields with the user's data
+      form.getTextField("Character Name").setText(characterDetails.name);
+      form.getTextField("Race").setText(characterDetails.race);
+      // ... fill other fields similarly
+      // Serialize the PDFDocument to bytes (a Uint8Array)
+      const pdfBytes = await pdfDoc.save();
+      // Trigger the download
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "character-sheet.pdf";
+      link.click();
     }
     // Other methods for character creation
   }
