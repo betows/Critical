@@ -52,7 +52,6 @@
 </template>
 
 <script>
-import pdfLib from "pdf-lib";
 
 export default {
   name: "CharacterSheet",
@@ -112,9 +111,25 @@ export default {
       const pdfDoc = await this.$pdfLib.PDFDocument.load(existingPdfBytes);
       // Get the form containing all the fields
       const form = pdfDoc.getForm();
+      let strValue = this.combinedAttributes[0].value + this.combinedAttributes[0].bonus;
+      let dexValue = this.combinedAttributes[1].value + this.combinedAttributes[1].bonus;
+      let conValue = this.combinedAttributes[2].value + this.combinedAttributes[2].bonus;
+      let intValue = this.combinedAttributes[3].value + this.combinedAttributes[3].bonus;
+      let wisValue = this.combinedAttributes[4].value + this.combinedAttributes[4].bonus;
+      let chaValue = this.combinedAttributes[5].value + this.combinedAttributes[5].bonus;
+      console.log(this.combinedAttributes);
       // Fill in the form fields with the user's data
       form.getTextField("CharacterName").setText(characterDetails.name);
-      form.getTextField("Race ").setText(characterDetails.race);
+      form.getTextField("Race ").setText(this.raceDetails.index);
+      form.getTextField("ClassLevel").setText(characterDetails.level.toString());
+      form.getTextField("Background").setText(characterDetails.background);
+      form.getTextField("STR").setText(strValue.toString());
+      form.getTextField("DEX").setText(dexValue.toString());
+      form.getTextField("CON").setText(conValue.toString());
+      form.getTextField("INT").setText(intValue.toString());
+      form.getTextField("WIS").setText(wisValue.toString());
+      form.getTextField("CHA").setText(chaValue.toString());
+      form.getTextField("Alignment").setText(characterDetails.alignment);
       // ... fill other fields similarly
       // Serialize the PDFDocument to bytes (a Uint8Array)
       const pdfBytes = await pdfDoc.save();
