@@ -4,7 +4,7 @@
       <v-text-field v-model="characterDetails.name" type="text" placeholder="Character Name" />
       <div class="header-details">
         <div style="display: flex; flex-direction: row; gap: 24px;">
-          <v-text-field :value="classDetails.index" type="text" placeholder="Class" />
+          <v-text-field :value="classDetails.index" type="text" placeholder="Class" disabled />
           <v-text-field
             v-model="characterDetails.level"
             type="number"
@@ -15,7 +15,7 @@
         </div>
         <v-text-field v-model="characterDetails.background" type="text" placeholder="Background" />
         <v-text-field v-model="characterDetails.playerName" type="text" placeholder="Player Name" />
-        <v-text-field :value="raceDetails.index" type="text" placeholder="Race" />
+        <v-text-field :value="raceDetails.index" type="text" placeholder="Race" disabled />
         <v-text-field v-model="characterDetails.alignment" type="text" placeholder="Alignment" />
       </div>
     </header>
@@ -31,6 +31,7 @@
             dense
             style="width: 80px; min-width: 80px; max-width: 80px; padding-top: 2px;"
             :value="bonus.value + bonus.bonus"
+            v-model="bonus.value"
           />
         </div>
       </div>
@@ -79,19 +80,10 @@ export default {
   },
   computed: {
     combinedAttributes() {
-      // Assuming classDetails have a similar structure for abilities
-      // and the bonuses from raceDetails and classDetails need to be combined.
       let attributes = this.initializeAttributes();
-      // Add bonuses from raceDetails
       for (let bonus of this.raceDetails.ability_bonuses) {
         attributes[bonus.ability_score.index].bonus += bonus.bonus;
       }
-      // Assuming classDetails has ability_bonuses as well
-      // Add bonuses from classDetails
-      // for (let bonus of this.classDetails.ability_bonuses) {
-      //   attributes[bonus.ability_score.index].bonus += bonus.bonus;
-      // }
-      // Convert the attributes object to an array for rendering
       return Object.values(attributes);
     },
     languages() {
@@ -100,16 +92,12 @@ export default {
   },
   methods: {
     async saveCharacter(characterDetails) {
-      this.listFormFields();
-      // Load the blank character sheet PDF
       const response = await fetch("/character-sheet.pdf");
       if (!response.ok) {
         throw new Error(`Failed to fetch PDF: ${response.statusText}`);
       }
       const existingPdfBytes = await response.arrayBuffer();
-      // Load a PDFDocument from the existing PDF bytes
       const pdfDoc = await this.$pdfLib.PDFDocument.load(existingPdfBytes);
-      // Get the form containing all the fields
       const form = pdfDoc.getForm();
       let strValue = this.combinedAttributes[0].value + this.combinedAttributes[0].bonus;
       let dexValue = this.combinedAttributes[1].value + this.combinedAttributes[1].bonus;
@@ -130,10 +118,9 @@ export default {
       form.getTextField("WIS").setText(wisValue.toString());
       form.getTextField("CHA").setText(chaValue.toString());
       form.getTextField("Alignment").setText(characterDetails.alignment);
-      // ... fill other fields similarly
-      // Serialize the PDFDocument to bytes (a Uint8Array)
+      // Serialize the updated PDF document to bytes
       const pdfBytes = await pdfDoc.save();
-      // Trigger the download
+      // Trigger the PDF download
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);

@@ -22,10 +22,6 @@ export const actions = {
     });
   },
   async criarPersonagem({ commit }, character) {
-    // Lógica de validação de dados do personagem
-    // ...
-
-    // Cria um novo objeto de personagem
     const novoPersonagem = {
       name: character.name,
       race: character.race,
